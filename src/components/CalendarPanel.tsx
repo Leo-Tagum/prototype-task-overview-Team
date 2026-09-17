@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 import type { CalendarMode, Person, Task } from "@/types";
 import { addDays, addMonths, addWeeks, format, isSameMonth, isToday, monthGrid, weekGrid } from "@/lib/dates";
@@ -116,13 +117,13 @@ export function CalendarPanel({
               const dayTasks = tasksByDay.get(iso) ?? [];
               const inMonth = isSameMonth(day, anchor);
               const selected = selectedDate === iso;
-              return (
+              const dayButton = (
                 <button
                   key={iso}
                   type="button"
                   onClick={() => handleDayClick(day)}
                   className={cn(
-                    "flex min-h-[64px] flex-col items-start gap-1 bg-card p-1.5 text-left transition-colors hover:bg-secondary/60 sm:min-h-[84px] sm:p-2",
+                    "flex min-h-[64px] w-full flex-col items-start gap-1 bg-card p-1.5 text-left transition-colors hover:bg-secondary/60 sm:min-h-[84px] sm:p-2",
                     !inMonth && "bg-muted/40 text-muted-foreground/50",
                     selected && "bg-secondary",
                   )}
@@ -135,35 +136,57 @@ export function CalendarPanel({
                   >
                     {format(day, "d")}
                   </span>
-                  <div className="flex w-full flex-col gap-0.5">
-                    {dayTasks.slice(0, 2).map((t) => (
-                      <div key={t.id} className="flex w-full items-center gap-1">
-                        <InitialsAvatar
-                          person={assigneeOf(t)}
-                          size={14}
-                          className={cn(
-                            "shrink-0",
-                            isOverdue(t) && "ring-2 ring-destructive",
-                            t.status === "done" && "opacity-30",
-                          )}
-                        />
-                        <span
-                          className={cn(
-                            "truncate text-[10px] leading-tight",
-                            t.status === "done" && "text-muted-foreground line-through",
-                          )}
-                        >
-                          {t.title}
-                        </span>
-                      </div>
+                  <div className="flex flex-wrap gap-1">
+                    {dayTasks.slice(0, 4).map((t) => (
+                      <InitialsAvatar
+                        key={t.id}
+                        person={assigneeOf(t)}
+                        size={16}
+                        className={cn(
+                          isOverdue(t) && "ring-2 ring-destructive",
+                          t.status === "done" && "opacity-30",
+                        )}
+                      />
                     ))}
-                    {dayTasks.length > 2 && (
-                      <span className="font-mono-data text-[9px] leading-none text-muted-foreground">
-                        +{dayTasks.length - 2} more
+                    {dayTasks.length > 4 && (
+                      <span className="self-center font-mono-data text-[9px] leading-none text-muted-foreground">
+                        +{dayTasks.length - 4}
                       </span>
                     )}
                   </div>
                 </button>
+              );
+
+              if (dayTasks.length === 0) return dayButton;
+
+              return (
+                <HoverCard key={iso} openDelay={150} closeDelay={100}>
+                  <HoverCardTrigger asChild>{dayButton}</HoverCardTrigger>
+                  <HoverCardContent className="w-72" align="start">
+                    <div className="mb-2 text-xs font-medium text-muted-foreground">{format(day, "EEEE, MMM d")}</div>
+                    <div className="flex flex-col gap-1">
+                      {dayTasks.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => onOpenTask(t.id)}
+                          className="flex items-center gap-2 rounded-sm px-1.5 py-1 text-left hover:bg-accent/40"
+                        >
+                          <InitialsAvatar person={assigneeOf(t)} size={18} />
+                          <span
+                            className={cn(
+                              "min-w-0 flex-1 truncate text-sm",
+                              t.status === "done" && "text-muted-foreground line-through",
+                            )}
+                          >
+                            {t.title}
+                          </span>
+                          {isOverdue(t) && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-destructive" aria-hidden />}
+                        </button>
+                      ))}
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
               );
             })}
           </div>
