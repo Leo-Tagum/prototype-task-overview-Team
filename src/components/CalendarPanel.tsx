@@ -135,21 +135,31 @@ export function CalendarPanel({
                   >
                     {format(day, "d")}
                   </span>
-                  <div className="flex flex-wrap gap-1">
-                    {dayTasks.slice(0, 3).map((t) => (
-                      <InitialsAvatar
-                        key={t.id}
-                        person={assigneeOf(t)}
-                        size={16}
-                        className={cn(
-                          isOverdue(t) && "ring-2 ring-destructive",
-                          t.status === "done" && "opacity-30",
-                        )}
-                      />
+                  <div className="flex w-full flex-col gap-0.5">
+                    {dayTasks.slice(0, 2).map((t) => (
+                      <div key={t.id} className="flex w-full items-center gap-1">
+                        <InitialsAvatar
+                          person={assigneeOf(t)}
+                          size={14}
+                          className={cn(
+                            "shrink-0",
+                            isOverdue(t) && "ring-2 ring-destructive",
+                            t.status === "done" && "opacity-30",
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            "truncate text-[10px] leading-tight",
+                            t.status === "done" && "text-muted-foreground line-through",
+                          )}
+                        >
+                          {t.title}
+                        </span>
+                      </div>
                     ))}
-                    {dayTasks.length > 3 && (
-                      <span className="self-center font-mono-data text-[9px] leading-none text-muted-foreground">
-                        +{dayTasks.length - 3}
+                    {dayTasks.length > 2 && (
+                      <span className="font-mono-data text-[9px] leading-none text-muted-foreground">
+                        +{dayTasks.length - 2} more
                       </span>
                     )}
                   </div>
