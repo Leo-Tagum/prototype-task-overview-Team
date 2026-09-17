@@ -88,7 +88,7 @@ export function Overview({
   return (
     <div className="flex flex-col gap-4 p-3">
       {brief && (
-        <div className="border-b border-border pb-3">
+        <div className="rounded-md border border-border bg-card p-3">
           <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
             Quick brief
           </div>
