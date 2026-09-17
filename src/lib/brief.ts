@@ -139,7 +139,7 @@ function lineWhatsStuck(tasks: Task[], projects: Project[], now: Date): string {
  * something outside the team's own work queue — an external input or
  * decision, which on a small team with no separate "decision" field is
  * the closest honest proxy for "waiting on you" available in the data. */
-function externalDecisions(tasks: Task[]): Task[] {
+export function externalDecisions(tasks: Task[]): Task[] {
   return tasks
     .filter((t) => !t.archived && t.status === "blocked" && t.blockedOn?.reason && !t.blockedOn?.taskId)
     .sort((a, b) => (statusEnteredAt(a) < statusEnteredAt(b) ? -1 : 1));

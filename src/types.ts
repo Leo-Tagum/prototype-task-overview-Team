@@ -17,6 +17,23 @@ export interface Project {
   closeTarget: string | null; // yyyy-MM-dd
   archived: boolean;
   createdAt: string;
+  /** A short outcome statement for the Roadmap's goal line, and one
+   * sub-line on why it matters. Null until someone sets them. */
+  goal: string | null;
+  goalWhy: string | null;
+}
+
+/** A named outcome a project's tasks work toward — "Get talked about
+ * where sellers ask for advice", not "Reddit posting". Status is never
+ * stored: it's derived from the phase's tasks (see src/lib/phases.ts). */
+export interface Phase {
+  id: string;
+  projectId: string;
+  name: string;
+  why: string;
+  targetMonth: string | null; // yyyy-MM
+  position: number;
+  archived: boolean;
 }
 
 export interface ActivityEntry {
@@ -44,6 +61,10 @@ export interface BlockedOn {
 export interface Task {
   id: string;
   projectId: string;
+  /** Which phase of the project's plan this task belongs to — null for
+   * work not yet slotted into a phase (shown as "Unphased" on the
+   * Roadmap). */
+  phaseId: string | null;
   title: string;
   notes: string;
   /** Short plain-language summary — what this task is, why it matters,

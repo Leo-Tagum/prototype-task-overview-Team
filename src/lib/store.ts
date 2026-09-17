@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { resolveCapability } from "./claude";
 import { newId } from "./id";
 import { nowISO } from "./dates";
-import type { ActivityEntry, Person, Project, Task } from "@/types";
+import type { ActivityEntry, Person, Phase, Project, Task } from "@/types";
 import { DEFAULT_CAPACITY_POINTS } from "@/types";
 
 const LOCAL_TASKS_KEY = "taskTracker.tasks.v1";
 const LOCAL_ROSTER_KEY = "taskTracker.roster.v1";
 const LOCAL_PROJECTS_KEY = "taskTracker.projects.v1";
+const LOCAL_PHASES_KEY = "taskTracker.phases.v1";
 
 function loadLocal<T>(key: string, fallback: T): T {
   try {
@@ -137,7 +138,14 @@ function mergeTaskPatch(
  * stored shape to match the current type. */
 function normalizeTask(raw: unknown): Task {
   const t = raw as Task;
-  return { ...t, brief: t.brief ?? "" };
+  return { ...t, brief: t.brief ?? "", phaseId: t.phaseId ?? null };
+}
+
+/** Same backfill concern as normalizeTask: `goal`/`goalWhy` were added to
+ * Project after projects already existed in storage. */
+function normalizeProject(raw: unknown): Project {
+  const p = raw as Project;
+  return { ...p, goal: p.goal ?? null, goalWhy: p.goalWhy ?? null };
 }
 
 function parseMentions(body: string, roster: Person[]): string[] {
@@ -164,12 +172,14 @@ export function useTaskStore(viewerId: string) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [roster, setRoster] = useState<Person[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [phases, setPhases] = useState<Phase[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     let unsubTasks: (() => void) | undefined;
     let unsubRoster: (() => void) | undefined;
     let unsubProjects: (() => void) | undefined;
+    let unsubPhases: (() => void) | undefined;
 
     (async () => {
       const db = await resolveCapability<DbNamespace>("db");
@@ -200,9 +210,18 @@ export function useTaskStore(viewerId: string) {
         });
         unsubProjects = db.collection("projects").onSnapshot((snap) => {
           const rows = snap.docs
-            .map((d) => d.data() as Project | undefined)
+            .map((d) => {
+              const data = d.data();
+              return data ? normalizeProject(data) : undefined;
+            })
             .filter((p): p is Project => !!p && !!p.id && !p.archived);
           setProjects(rows);
+        });
+        unsubPhases = db.collection("phases").onSnapshot((snap) => {
+          const rows = snap.docs
+            .map((d) => d.data() as Phase | undefined)
+            .filter((p): p is Phase => !!p && !!p.id && !p.archived);
+          setPhases(rows);
         });
       } else {
         setTasks(
@@ -211,7 +230,12 @@ export function useTaskStore(viewerId: string) {
             .filter((t) => !t.archived),
         );
         setRoster(loadLocal(LOCAL_ROSTER_KEY, [] as Person[]));
-        setProjects(loadLocal(LOCAL_PROJECTS_KEY, [] as Project[]).filter((p) => !p.archived));
+        setProjects(
+          loadLocal(LOCAL_PROJECTS_KEY, [] as Project[])
+            .map((p) => normalizeProject(p))
+            .filter((p) => !p.archived),
+        );
+        setPhases(loadLocal(LOCAL_PHASES_KEY, [] as Phase[]).filter((p) => !p.archived));
         setBackend("local");
         setReady(true);
       }
@@ -225,6 +249,7 @@ export function useTaskStore(viewerId: string) {
       unsubTasks?.();
       unsubRoster?.();
       unsubProjects?.();
+      unsubPhases?.();
     };
   }, []);
 
@@ -233,6 +258,7 @@ export function useTaskStore(viewerId: string) {
   // change; cloud backend is already durable.
   const allLocalTasksRef = useRef<Task[]>([]);
   const allLocalProjectsRef = useRef<Project[]>([]);
+  const allLocalPhasesRef = useRef<Phase[]>([]);
   useEffect(() => {
     if (backend !== "local" || !ready) return;
     allLocalTasksRef.current = tasks;
@@ -247,6 +273,11 @@ export function useTaskStore(viewerId: string) {
     allLocalProjectsRef.current = projects;
     saveLocal(LOCAL_PROJECTS_KEY, projects);
   }, [projects, backend, ready]);
+  useEffect(() => {
+    if (backend !== "local" || !ready) return;
+    allLocalPhasesRef.current = phases;
+    saveLocal(LOCAL_PHASES_KEY, phases);
+  }, [phases, backend, ready]);
 
   /**
    * Best-effort single-writer coordination for a task doc: all mutation
@@ -350,11 +381,13 @@ export function useTaskStore(viewerId: string) {
       size?: Task["size"];
       assigneeId?: string | null;
       dueDate?: string | null;
+      phaseId?: string | null;
     }): Promise<Task> => {
       const at = nowISO();
       const task: Task = {
         id: newId(),
         projectId: input.projectId,
+        phaseId: input.phaseId ?? null,
         title: input.title,
         notes: "",
         brief: "",
@@ -478,7 +511,15 @@ export function useTaskStore(viewerId: string) {
 
   const createProject = useCallback(
     async (name: string, closeTarget: string | null): Promise<Project> => {
-      const project: Project = { id: newId(), name, closeTarget, archived: false, createdAt: nowISO() };
+      const project: Project = {
+        id: newId(),
+        name,
+        closeTarget,
+        archived: false,
+        createdAt: nowISO(),
+        goal: null,
+        goalWhy: null,
+      };
       if (backend === "cloud" && dbRef.current) {
         await dbRef.current.collection("projects").doc(project.id).set(project as unknown as Record<string, unknown>);
       } else {
@@ -511,6 +552,41 @@ export function useTaskStore(viewerId: string) {
     [backend, tasks, archiveTask],
   );
 
+  const updateProjectGoal = useCallback(
+    async (projectId: string, goal: string | null, goalWhy: string | null) => {
+      if (backend === "cloud" && dbRef.current) {
+        await dbRef.current.collection("projects").doc(projectId).update({ goal, goalWhy });
+      } else {
+        setProjects((prev) => prev.map((p) => (p.id === projectId ? { ...p, goal, goalWhy } : p)));
+      }
+    },
+    [backend],
+  );
+
+  const createPhase = useCallback(
+    async (projectId: string, name: string, why: string, targetMonth: string | null): Promise<Phase> => {
+      const maxPosition = phases
+        .filter((p) => p.projectId === projectId)
+        .reduce((max, p) => Math.max(max, p.position), 0);
+      const phase: Phase = {
+        id: newId(),
+        projectId,
+        name,
+        why,
+        targetMonth,
+        position: maxPosition + 1000,
+        archived: false,
+      };
+      if (backend === "cloud" && dbRef.current) {
+        await dbRef.current.collection("phases").doc(phase.id).set(phase as unknown as Record<string, unknown>);
+      } else {
+        setPhases((prev) => [...prev, phase]);
+      }
+      return phase;
+    },
+    [backend, phases],
+  );
+
   const uploadAttachment = useCallback(async (file: File) => {
     const assets = assetsRef.current;
     if (!assets) return null;
@@ -523,6 +599,7 @@ export function useTaskStore(viewerId: string) {
     tasks,
     roster,
     projects,
+    phases,
     updateTask,
     reorderTask,
     insertAfter,
@@ -534,6 +611,8 @@ export function useTaskStore(viewerId: string) {
     updatePersonCapacity,
     createProject,
     archiveProject,
+    updateProjectGoal,
+    createPhase,
     uploadAttachment,
   };
 }

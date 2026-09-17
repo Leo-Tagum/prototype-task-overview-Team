@@ -1,7 +1,9 @@
 import { useMemo } from "react";
 import { InitialsAvatar, statusDotClass } from "@/components/ui-bits";
+import { RoadmapPanel } from "@/components/RoadmapPanel";
+import { NewPhaseDialog } from "@/components/NewPhaseDialog";
 import { STATUS_META, STATUS_ORDER } from "@/types";
-import type { Person, Project, Task } from "@/types";
+import type { Person, Phase, Project, Task } from "@/types";
 import { isOverdue, projectStatus, taskRisk, weeklyCompletionCounts } from "@/lib/metrics";
 import { formatDueLabel } from "@/lib/dates";
 import { buildQuickBrief } from "@/lib/brief";
@@ -57,13 +59,24 @@ function WeeklyTrend({ tasks, now }: { tasks: Task[]; now: Date }) {
 export function Overview({
   tasks,
   projects,
+  phases,
   roster,
+  selectedProject,
   onOpenTask,
+  onCreatePhase,
+  onUpdateGoal,
 }: {
   tasks: Task[];
   projects: Project[];
+  phases: Phase[];
   roster: Person[];
+  /** The project currently picked in the header switcher — the Roadmap
+   * is project-scoped (phases belong to one project), everything else on
+   * this screen still spans all projects. */
+  selectedProject: Project | null;
   onOpenTask: (taskId: string) => void;
+  onCreatePhase: (name: string, why: string, targetMonth: string | null) => Promise<unknown>;
+  onUpdateGoal: (goal: string | null, goalWhy: string | null) => void;
 }) {
   const now = new Date();
   const weekStart = new Date(now.getTime() - 7 * 86_400_000);
@@ -165,40 +178,60 @@ export function Overview({
         )}
       </div>
 
-      <div>
-        <h2 className="mb-2 font-display text-sm font-semibold">Deals in flight</h2>
-        <div className="flex flex-col gap-2">
-          {projects.map((project) => {
-            const projTasks = tasks.filter((t) => t.projectId === project.id && !t.archived);
-            const total = projTasks.length || 1;
-            const status = projectStatus(project, projTasks, now);
-            return (
-              <div key={project.id} className="rounded-md border border-border bg-card p-3">
-                <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <span className="font-medium">{project.name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className={cn("rounded-sm px-1.5 py-0.5 text-[11px] font-medium", PROJECT_STATUS_CLASS[status])}>
-                      {PROJECT_STATUS_LABEL[status]}
-                    </span>
-                    {project.closeTarget && (
-                      <span className="text-xs text-muted-foreground">
-                        Close: {formatDueLabel({ dueDate: project.closeTarget })}
+      {selectedProject && phases.some((p) => p.projectId === selectedProject.id) ? (
+        <div>
+          <h2 className="mb-2 font-display text-sm font-semibold">Roadmap</h2>
+          <RoadmapPanel
+            project={selectedProject}
+            phases={phases}
+            tasks={tasks}
+            roster={roster}
+            onOpenTask={onOpenTask}
+            onCreatePhase={onCreatePhase}
+            onUpdateGoal={onUpdateGoal}
+          />
+        </div>
+      ) : (
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h2 className="font-display text-sm font-semibold">Deals in flight</h2>
+            {selectedProject && (
+              <NewPhaseDialog onCreate={(name, why, targetMonth) => onCreatePhase(name, why, targetMonth)} />
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            {projects.map((project) => {
+              const projTasks = tasks.filter((t) => t.projectId === project.id && !t.archived);
+              const total = projTasks.length || 1;
+              const status = projectStatus(project, projTasks, now);
+              return (
+                <div key={project.id} className="rounded-md border border-border bg-card p-3">
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <span className="font-medium">{project.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={cn("rounded-sm px-1.5 py-0.5 text-[11px] font-medium", PROJECT_STATUS_CLASS[status])}>
+                        {PROJECT_STATUS_LABEL[status]}
                       </span>
-                    )}
+                      {project.closeTarget && (
+                        <span className="text-xs text-muted-foreground">
+                          Close: {formatDueLabel({ dueDate: project.closeTarget })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex h-2 overflow-hidden rounded-full bg-muted">
+                    {STATUS_ORDER.map((s) => {
+                      const count = projTasks.filter((t) => t.status === s).length;
+                      if (!count) return null;
+                      return <div key={s} className={statusDotClass(s)} style={{ width: `${(count / total) * 100}%` }} title={STATUS_META[s].label} />;
+                    })}
                   </div>
                 </div>
-                <div className="flex h-2 overflow-hidden rounded-full bg-muted">
-                  {STATUS_ORDER.map((s) => {
-                    const count = projTasks.filter((t) => t.status === s).length;
-                    if (!count) return null;
-                    return <div key={s} className={statusDotClass(s)} style={{ width: `${(count / total) * 100}%` }} title={STATUS_META[s].label} />;
-                  })}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <WeeklyTrend tasks={tasks} now={now} />
     </div>

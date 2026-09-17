@@ -83,6 +83,9 @@ function App() {
   const project = store.projects.find((p) => p.id === selectedProjectId) ?? store.projects[0];
   const openTask = store.tasks.find((t) => t.id === openTaskId) ?? null;
   const projectSiblings = openTask ? store.tasks.filter((t) => t.projectId === openTask.projectId) : [];
+  const openTaskPhases = openTask
+    ? store.phases.filter((p) => p.projectId === openTask.projectId).sort((a, b) => a.position - b.position)
+    : [];
 
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl flex-col">
@@ -151,7 +154,16 @@ function App() {
 
       <main className="flex-1">
         {activeTab === "overview" && (
-          <Overview tasks={store.tasks} projects={store.projects} roster={store.roster} onOpenTask={setOpenTaskId} />
+          <Overview
+            tasks={store.tasks}
+            projects={store.projects}
+            phases={store.phases}
+            roster={store.roster}
+            selectedProject={project}
+            onOpenTask={setOpenTaskId}
+            onCreatePhase={(name, why, targetMonth) => store.createPhase(project.id, name, why, targetMonth)}
+            onUpdateGoal={(goal, goalWhy) => store.updateProjectGoal(project.id, goal, goalWhy)}
+          />
         )}
         {activeTab === "list" && (
           <TaskList
@@ -211,6 +223,7 @@ function App() {
         }}
         task={openTask}
         siblings={projectSiblings}
+        phases={openTaskPhases}
         roster={store.roster}
         onUpdate={(patch) => openTask && store.updateTask(openTask.id, patch)}
         onArchive={() => openTask && store.archiveTask(openTask.id)}

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { InitialsAvatar, PriorityBadge, StatusBadge } from "@/components/ui-bits";
 import { PRIORITY_META, SIZE_META, STATUS_META, STATUS_ORDER } from "@/types";
-import type { ActivityEntry, Person, Priority, Size, Status, Task } from "@/types";
+import type { ActivityEntry, Person, Phase, Priority, Size, Status, Task } from "@/types";
 
 function describeActivityEntry(entry: ActivityEntry, roster: Person[]): string {
   const actor = roster.find((p) => p.id === entry.actorId)?.name ?? "Someone";
@@ -58,6 +58,7 @@ export function TaskEditor({
   onOpenChange,
   task,
   siblings,
+  phases,
   roster,
   onUpdate,
   onArchive,
@@ -68,6 +69,8 @@ export function TaskEditor({
   task: Task | null;
   /** All non-archived tasks in the same project, for the "blocked by" picker. */
   siblings: Task[];
+  /** This task's project's phases, position-ordered. */
+  phases: Phase[];
   roster: Person[];
   onUpdate: (patch: Partial<Task>) => void;
   onArchive: () => void;
@@ -210,6 +213,28 @@ export function TaskEditor({
               />
             </div>
           </div>
+
+          {phases.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <Label>Phase</Label>
+              <Select
+                value={task.phaseId ?? "none"}
+                onValueChange={(v) => onUpdate({ phaseId: v === "none" ? null : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unphased</SelectItem>
+                  {phases.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
