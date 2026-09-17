@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { InitialsAvatar, statusDotClass } from "@/components/ui-bits";
 import { RoadmapPanel } from "@/components/RoadmapPanel";
 import { NewPhaseDialog } from "@/components/NewPhaseDialog";
+import { CalendarPanel } from "@/components/CalendarPanel";
 import { STATUS_META, STATUS_ORDER } from "@/types";
-import type { Person, Phase, Project, Task } from "@/types";
+import type { CalendarMode, Person, Phase, Project, Task } from "@/types";
 import { isOverdue, projectStatus, taskRisk, weeklyCompletionCounts } from "@/lib/metrics";
 import { formatDueLabel } from "@/lib/dates";
 import { buildQuickBrief } from "@/lib/brief";
@@ -80,6 +81,9 @@ export function Overview({
 }) {
   const now = new Date();
   const weekStart = new Date(now.getTime() - 7 * 86_400_000);
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>("month");
+  const [calendarAnchor, setCalendarAnchor] = useState(now);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const doneThisWeek = tasks.filter((t) => t.completedAt && new Date(t.completedAt) >= weekStart).length;
   const blockedCount = tasks.filter((t) => t.status === "blocked" && !t.archived).length;
@@ -176,6 +180,21 @@ export function Overview({
             })}
           </div>
         )}
+      </div>
+
+      <div>
+        <h2 className="mb-2 font-display text-sm font-semibold">Calendar</h2>
+        <CalendarPanel
+          tasks={tasks}
+          roster={roster}
+          mode={calendarMode}
+          onModeChange={setCalendarMode}
+          anchor={calendarAnchor}
+          onAnchorChange={setCalendarAnchor}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          onOpenTask={onOpenTask}
+        />
       </div>
 
       {selectedProject && phases.some((p) => p.projectId === selectedProject.id) ? (

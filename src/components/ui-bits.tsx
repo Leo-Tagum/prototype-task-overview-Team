@@ -89,28 +89,40 @@ export function SizeBadge({ size, className }: { size: Size; className?: string 
   );
 }
 
+/** Two-letter initials for a full name ("Leo Tagum" -> "LT"); a
+ * single-word name ("Leo") has no second letter to derive, so this
+ * returns the whole word rather than a lone, ambiguous letter — a
+ * one-letter avatar doesn't tell a reader who it is. */
+function avatarLabel(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return parts[0] ?? "?";
+}
+
 export function InitialsAvatar({
   person,
   size = 22,
   className,
 }: {
-  person: Pick<Person, "name" | "initials"> | null;
+  person: Pick<Person, "name"> | null;
   size?: number;
   className?: string;
 }) {
-  const initials = person?.initials || "?";
   const name = person?.name ?? "Unassigned";
+  const label = person ? avatarLabel(person.name) : "?";
+  const isWide = label.length > 2;
   return (
     <span
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-full bg-secondary font-mono-data text-[10px] font-semibold text-secondary-foreground ring-1 ring-border",
         !person && "border border-dashed border-muted-foreground/50 bg-transparent text-muted-foreground",
+        isWide && "px-1.5",
         className,
       )}
-      style={{ width: size, height: size }}
+      style={isWide ? { height: size, minWidth: size } : { width: size, height: size }}
       title={name}
     >
-      {initials}
+      {label}
     </span>
   );
 }
