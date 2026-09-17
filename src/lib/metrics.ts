@@ -198,3 +198,17 @@ export function openLoadByStatus(tasks: Task[], assigneeId: string | null): Reco
 export function msToDays(ms: number): number {
   return ms / 86_400_000;
 }
+
+/** Completed-task counts for the trailing `weeks` seven-day windows,
+ * oldest first — the last element is the current (partial) week. Shared
+ * by the Overview trend chart and the quick brief so "this week" always
+ * means the same window in both places. */
+export function weeklyCompletionCounts(tasks: Task[], weeks: number, now = new Date()): number[] {
+  const counts: number[] = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const end = new Date(now.getTime() - i * 7 * 86_400_000);
+    const start = new Date(end.getTime() - 7 * 86_400_000);
+    counts.push(tasks.filter((t) => t.completedAt && inWindow(t.completedAt, start, end)).length);
+  }
+  return counts;
+}

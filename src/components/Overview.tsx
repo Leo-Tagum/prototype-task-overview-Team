@@ -2,8 +2,9 @@ import { useMemo } from "react";
 import { InitialsAvatar, statusDotClass } from "@/components/ui-bits";
 import { STATUS_META, STATUS_ORDER } from "@/types";
 import type { Person, Project, Task } from "@/types";
-import { isOverdue, projectStatus, taskRisk } from "@/lib/metrics";
+import { isOverdue, projectStatus, taskRisk, weeklyCompletionCounts } from "@/lib/metrics";
 import { formatDueLabel } from "@/lib/dates";
+import { buildQuickBrief } from "@/lib/brief";
 import { cn } from "@/lib/utils";
 
 const PROJECT_STATUS_LABEL: Record<ReturnType<typeof projectStatus>, string> = {
@@ -28,18 +29,14 @@ function Tile({ label, value, tone }: { label: string; value: number; tone?: "de
   );
 }
 
-function WeeklyTrend({ tasks }: { tasks: Task[] }) {
+function WeeklyTrend({ tasks, now }: { tasks: Task[]; now: Date }) {
   const weeks = useMemo(() => {
-    const now = new Date();
-    const buckets: { label: string; count: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const end = new Date(now.getTime() - i * 7 * 86_400_000);
-      const start = new Date(end.getTime() - 7 * 86_400_000);
-      const count = tasks.filter((t) => t.completedAt && new Date(t.completedAt) >= start && new Date(t.completedAt) < end).length;
-      buckets.push({ label: i === 0 ? "This wk" : `-${i}w`, count });
-    }
-    return buckets;
-  }, [tasks]);
+    const counts = weeklyCompletionCounts(tasks, 6, now);
+    return counts.map((count, idx) => ({
+      label: idx === counts.length - 1 ? "This wk" : `-${counts.length - 1 - idx}w`,
+      count,
+    }));
+  }, [tasks, now]);
   const max = Math.max(1, ...weeks.map((w) => w.count));
 
   return (
@@ -86,8 +83,23 @@ export function Overview({
     [tasks, now],
   );
 
+  const brief = useMemo(() => buildQuickBrief(tasks, projects, now), [tasks, projects, now]);
+
   return (
     <div className="flex flex-col gap-4 p-3">
+      {brief && (
+        <div className="border-b border-border pb-3">
+          <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
+            Quick brief
+          </div>
+          <div className="text-sm leading-relaxed text-muted-foreground">
+            {brief.lines.map((line, i) => (
+              <p key={i}>{line}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Tile label="Active deals" value={projects.length} />
         <Tile label="Done this week" value={doneThisWeek} />
@@ -157,7 +169,7 @@ export function Overview({
         </div>
       </div>
 
-      <WeeklyTrend tasks={tasks} />
+      <WeeklyTrend tasks={tasks} now={now} />
     </div>
   );
 }
