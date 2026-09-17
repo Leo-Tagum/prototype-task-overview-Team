@@ -131,6 +131,15 @@ function mergeTaskPatch(
   return { merged, changedTopLevelKeys: [...changedTopLevelKeys] };
 }
 
+/** Backfills fields added to the Task schema after tasks already existed
+ * in storage — a doc written before a field existed simply doesn't have
+ * it, so every read site funnels through here rather than trusting the
+ * stored shape to match the current type. */
+function normalizeTask(raw: unknown): Task {
+  const t = raw as Task;
+  return { ...t, brief: t.brief ?? "" };
+}
+
 function parseMentions(body: string, roster: Person[]): string[] {
   const found = new Set<string>();
   for (const person of roster) {
@@ -173,7 +182,10 @@ export function useTaskStore(viewerId: string) {
         unsubTasks = db.collection("tasks").onSnapshot(
           (snap) => {
             const rows = snap.docs
-              .map((d) => d.data() as Task | undefined)
+              .map((d) => {
+                const data = d.data();
+                return data ? normalizeTask(data) : undefined;
+              })
               .filter((t): t is Task => !!t && !!t.id && !t.archived);
             setTasks(rows);
             setReady(true);
@@ -193,7 +205,11 @@ export function useTaskStore(viewerId: string) {
           setProjects(rows);
         });
       } else {
-        setTasks(loadLocal(LOCAL_TASKS_KEY, [] as Task[]).filter((t) => !t.archived));
+        setTasks(
+          loadLocal(LOCAL_TASKS_KEY, [] as Task[])
+            .map((t) => normalizeTask(t))
+            .filter((t) => !t.archived),
+        );
         setRoster(loadLocal(LOCAL_ROSTER_KEY, [] as Person[]));
         setProjects(loadLocal(LOCAL_PROJECTS_KEY, [] as Project[]).filter((p) => !p.archived));
         setBackend("local");
@@ -256,7 +272,8 @@ export function useTaskStore(viewerId: string) {
   const getFreshTask = useCallback(async (taskId: string): Promise<Task | null> => {
     if (backend === "cloud" && dbRef.current) {
       const snap = await dbRef.current.collection("tasks").doc(taskId).get();
-      return snap.exists ? (snap.data() as unknown as Task) : null;
+      const data = snap.exists ? snap.data() : undefined;
+      return data ? normalizeTask(data) : null;
     }
     return allLocalTasksRef.current.find((t) => t.id === taskId) ?? tasks.find((t) => t.id === taskId) ?? null;
   }, [backend, tasks]);
