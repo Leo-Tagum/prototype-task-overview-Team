@@ -135,22 +135,21 @@ export function CalendarPanel({
                   >
                     {format(day, "d")}
                   </span>
-                  <div className="flex flex-wrap gap-0.5">
-                    {dayTasks.slice(0, 4).map((t) => (
-                      <span
+                  <div className="flex flex-wrap gap-1">
+                    {dayTasks.slice(0, 3).map((t) => (
+                      <InitialsAvatar
                         key={t.id}
+                        person={assigneeOf(t)}
+                        size={16}
                         className={cn(
-                          "h-1.5 w-1.5 rounded-full ring-1",
-                          priorityDotClass(t.priority),
-                          isOverdue(t) ? "ring-destructive" : "ring-transparent",
+                          isOverdue(t) && "ring-2 ring-destructive",
                           t.status === "done" && "opacity-30",
                         )}
-                        aria-hidden
                       />
                     ))}
-                    {dayTasks.length > 4 && (
-                      <span className="font-mono-data text-[9px] leading-none text-muted-foreground">
-                        +{dayTasks.length - 4}
+                    {dayTasks.length > 3 && (
+                      <span className="self-center font-mono-data text-[9px] leading-none text-muted-foreground">
+                        +{dayTasks.length - 3}
                       </span>
                     )}
                   </div>
@@ -186,6 +185,7 @@ export function CalendarPanel({
                 <div className="flex flex-col gap-1">
                   {dayTasks.slice(0, 3).map((t) => (
                     <div key={t.id} className="flex items-center gap-1 truncate text-xs">
+                      <InitialsAvatar person={assigneeOf(t)} size={14} className="shrink-0" />
                       <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", priorityDotClass(t.priority))} aria-hidden />
                       <span className={cn("truncate", t.status === "done" && "text-muted-foreground line-through")}>
                         {t.title}
