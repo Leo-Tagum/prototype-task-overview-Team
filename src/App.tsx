@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { InitialsAvatar } from "@/components/ui-bits";
 import { IdentityPicker } from "@/components/IdentityPicker";
 import { NewProjectForm, NewProjectDialog } from "@/components/NewProjectDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { TaskList } from "@/components/TaskList";
 import { SummaryBoard } from "@/components/SummaryBoard";
 import { CalendarPanel } from "@/components/CalendarPanel";
@@ -99,19 +100,22 @@ function App() {
           </SelectContent>
         </Select>
         <NewProjectDialog onCreate={store.createProject} />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-          title={`Archive "${project.name}"`}
-          onClick={() => {
-            if (window.confirm(`Archive "${project.name}"? Its tasks go with it — this can't be undone from here.`)) {
-              store.archiveProject(project.id);
-            }
-          }}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <ConfirmDialog
+          trigger={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              title={`Archive "${project.name}"`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          }
+          title={`Archive "${project.name}"?`}
+          description="Its tasks go with it — this can't be undone from here."
+          confirmLabel="Archive project"
+          onConfirm={() => store.archiveProject(project.id)}
+        />
 
         <div className="ml-auto flex items-center gap-3">
           <div className="flex -space-x-1.5">
