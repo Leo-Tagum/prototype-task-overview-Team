@@ -1,9 +1,14 @@
 # Task Tracker — build & publish
 
 A team task tracker built as a claude.ai Artifact (calendar, priority 1–5,
-a status Kanban board, workload and KPI views — synced via the artifact's
-own `db`/`assets` capabilities, not a server you host). This is the team
-successor to a personal planner called Waypoint, built the same way.
+a status Kanban board, a Roadmap/phase plan view, workload and KPI
+views — synced via the artifact's own `db`/`assets` capabilities, not a
+server you host). This is the team successor to a personal planner
+called Waypoint, built the same way.
+
+**Read `CLAUDE.md` first** — it has the project's hard-won rules (schema
+backfill, the `window.confirm` sandbox trap, computed-never-stored status,
+etc.) that this file doesn't repeat.
 
 ## Local development
 
@@ -41,24 +46,34 @@ regenerated from source, see `.gitignore`.
 
 ## Source layout
 
-- `src/types.ts` — Person/Project/Task/ActivityEntry/TaskComment, the
-  priority (1–5) and status enums, and the at-risk thresholds.
+- `src/types.ts` — Person/Project/Phase/Task/ActivityEntry/TaskComment,
+  the priority (1–5) and status enums, and the at-risk thresholds.
 - `src/lib/store.ts` — the `db`-capability read/write backend, with a
   `localStorage` fallback. Every task field change goes through one
   merge path (`mergeTaskPatch`) so the activity log and `completedAt`
   derivation can't be skipped by a component editing fields directly.
   Concurrent edits to the same task doc are serialized with the `db`
   capability's `acquire()` lease (cooperative, not a lock — see the
-  comment on `withTaskLease`).
+  comment on `withTaskLease`). `normalizeTask`/`normalizeProject`
+  backfill fields added after data already existed — see CLAUDE.md rule 1
+  before adding a new field to `Task` or `Project`.
 - `src/lib/identity.ts` — the per-browser "who's viewing" id (attribution,
   not authentication; stored in personal `localStorage`, never the shared
   db).
 - `src/lib/metrics.ts` — every derived KPI/at-risk computation and its
   tunable thresholds, in one place.
+- `src/lib/phases.ts` — Roadmap's phase-status and current-phase
+  derivation (always computed from tasks, never stored).
+- `src/lib/brief.ts` — Overview's "Quick brief" sentence templates
+  (interpolation only, never a model call — see CLAUDE.md rule 4).
+- `src/lib/lastViewed.ts` — the Board's per-viewer "N changes since you
+  last looked" counter.
 - `src/components/` — one file per view/major piece: `TaskList`,
-  `SummaryBoard`, `CalendarPanel`, `WorkloadPanel`, `KpiPanel`,
-  `Overview`, `TaskEditor` (the task drawer), `PasteIntake`,
-  `InsertAfterMenu`.
+  `SummaryBoard`, `BriefingBoard`, `CalendarPanel`, `RoadmapPanel`,
+  `WorkloadPanel`, `KpiPanel`, `Overview`, `TaskEditor` (the task
+  drawer), `PasteIntake`, `InsertAfterMenu`, `NewProjectDialog`,
+  `NewPhaseDialog`, `ConfirmDialog` (in-page confirm — never
+  `window.confirm`, see CLAUDE.md rule 2), `IdentityPicker`.
 - `src/App.tsx` — tabs, project switcher, identity picker gate, and the
   task drawer wiring.
 
