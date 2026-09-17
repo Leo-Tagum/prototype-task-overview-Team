@@ -471,6 +471,28 @@ export function useTaskStore(viewerId: string) {
     [backend],
   );
 
+  const archiveProject = useCallback(
+    async (projectId: string) => {
+      // Cascade: a project's tasks become unreachable ghosts otherwise —
+      // still counted in Calendar/Overview/Workload/KPI (none of which are
+      // project-scoped) but with no way to open them, since the project
+      // that would let you select them into List/Board is gone.
+      const toArchive = tasks.filter((t) => t.projectId === projectId);
+      for (const t of toArchive) await archiveTask(t.id);
+
+      if (backend === "cloud" && dbRef.current) {
+        await dbRef.current.collection("projects").doc(projectId).update({ archived: true });
+      } else {
+        setProjects((prev) => prev.filter((p) => p.id !== projectId));
+        allLocalProjectsRef.current = allLocalProjectsRef.current.map((p) =>
+          p.id === projectId ? { ...p, archived: true } : p,
+        );
+        saveLocal(LOCAL_PROJECTS_KEY, allLocalProjectsRef.current);
+      }
+    },
+    [backend, tasks, archiveTask],
+  );
+
   const uploadAttachment = useCallback(async (file: File) => {
     const assets = assetsRef.current;
     if (!assets) return null;
@@ -493,6 +515,7 @@ export function useTaskStore(viewerId: string) {
     addPerson,
     updatePersonCapacity,
     createProject,
+    archiveProject,
     uploadAttachment,
   };
 }
