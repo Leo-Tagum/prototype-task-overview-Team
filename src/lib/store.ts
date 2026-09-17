@@ -340,6 +340,7 @@ export function useTaskStore(viewerId: string) {
         projectId: input.projectId,
         title: input.title,
         notes: "",
+        brief: "",
         priority: input.priority ?? 3,
         status: input.status ?? "not_started",
         position: input.position,

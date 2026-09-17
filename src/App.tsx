@@ -9,6 +9,7 @@ import { NewProjectForm, NewProjectDialog } from "@/components/NewProjectDialog"
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { TaskList } from "@/components/TaskList";
 import { SummaryBoard } from "@/components/SummaryBoard";
+import { BriefingBoard } from "@/components/BriefingBoard";
 import { CalendarPanel } from "@/components/CalendarPanel";
 import { WorkloadPanel } from "@/components/WorkloadPanel";
 import { KpiPanel } from "@/components/KpiPanel";
@@ -18,11 +19,12 @@ import { useTaskStore } from "@/lib/store";
 import { claimIdentity, resolveViewer, useViewerId } from "@/lib/identity";
 import type { CalendarMode } from "@/types";
 
-type Tab = "overview" | "list" | "board" | "calendar" | "workload" | "kpi";
+type Tab = "overview" | "list" | "board" | "briefing" | "calendar" | "workload" | "kpi";
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "list", label: "List" },
   { key: "board", label: "Board" },
+  { key: "briefing", label: "Briefing" },
   { key: "calendar", label: "Calendar" },
   { key: "workload", label: "Workload" },
   { key: "kpi", label: "KPI" },
@@ -170,6 +172,15 @@ function App() {
             viewerId={effectiveId}
             onOpenTask={setOpenTaskId}
             onPaste={(titles, defaults) => store.createTasksFromPaste(project.id, titles, defaults)}
+          />
+        )}
+        {activeTab === "briefing" && (
+          <BriefingBoard
+            projectId={project.id}
+            tasks={store.tasks}
+            roster={store.roster}
+            onOpenTask={setOpenTaskId}
+            onUpdateTask={store.updateTask}
           />
         )}
         {activeTab === "calendar" && (

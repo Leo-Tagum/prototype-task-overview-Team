@@ -75,8 +75,10 @@ export function TaskEditor({
 }) {
   const [titleDraft, setTitleDraft] = useState("");
   const [notesDraft, setNotesDraft] = useState("");
+  const [briefDraft, setBriefDraft] = useState("");
   const [titleDirty, setTitleDirty] = useState(false);
   const [notesDirty, setNotesDirty] = useState(false);
+  const [briefDirty, setBriefDirty] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [openedUpdatedAt, setOpenedUpdatedAt] = useState<string | null>(null);
 
@@ -88,14 +90,17 @@ export function TaskEditor({
     if (open && task) {
       setTitleDraft(task.title);
       setNotesDraft(task.notes);
+      setBriefDraft(task.brief);
       setTitleDirty(false);
       setNotesDirty(false);
+      setBriefDirty(false);
       setCommentText("");
       setOpenedUpdatedAt(task.updatedAt);
     }
   }, [open, task?.id]);
 
-  const externallyChanged = !!task && !!openedUpdatedAt && task.updatedAt !== openedUpdatedAt && (titleDirty || notesDirty);
+  const externallyChanged =
+    !!task && !!openedUpdatedAt && task.updatedAt !== openedUpdatedAt && (titleDirty || notesDirty || briefDirty);
 
   const assignee = useMemo(() => roster.find((p) => p.id === task?.assigneeId) ?? null, [roster, task]);
   const activitySorted = useMemo(
@@ -112,8 +117,10 @@ export function TaskEditor({
   function reloadFromServer() {
     setTitleDraft(task!.title);
     setNotesDraft(task!.notes);
+    setBriefDraft(task!.brief);
     setTitleDirty(false);
     setNotesDirty(false);
+    setBriefDirty(false);
     setOpenedUpdatedAt(task!.updatedAt);
   }
 
@@ -125,6 +132,11 @@ export function TaskEditor({
   function commitNotes() {
     if (notesDirty) onUpdate({ notes: notesDraft });
     setNotesDirty(false);
+    setOpenedUpdatedAt(task!.updatedAt);
+  }
+  function commitBrief() {
+    if (briefDirty) onUpdate({ brief: briefDraft });
+    setBriefDirty(false);
     setOpenedUpdatedAt(task!.updatedAt);
   }
 
@@ -176,6 +188,24 @@ export function TaskEditor({
                 }}
                 onBlur={commitNotes}
                 placeholder="Context, links…"
+                rows={3}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="task-brief">Brief</Label>
+              <p className="text-xs text-muted-foreground">
+                What this task is, why it matters, and where it's headed — plain language for anyone outside the
+                team. Shown on the Briefing tab.
+              </p>
+              <Textarea
+                id="task-brief"
+                value={briefDraft}
+                onChange={(e) => {
+                  setBriefDraft(e.target.value);
+                  setBriefDirty(true);
+                }}
+                onBlur={commitBrief}
+                placeholder="e.g. Confirming the venue so catering can lock numbers — waiting on their reply."
                 rows={3}
               />
             </div>

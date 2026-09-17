@@ -46,6 +46,11 @@ export interface Task {
   projectId: string;
   title: string;
   notes: string;
+  /** Short plain-language summary — what this task is, why it matters,
+   * and why it's headed the way it is — written by whoever's working it
+   * for anyone outside the team (e.g. a business owner) to read without
+   * needing the rest of the board. Surfaced on the Briefing tab. */
+  brief: string;
   priority: Priority;
   status: Status;
   position: number;
