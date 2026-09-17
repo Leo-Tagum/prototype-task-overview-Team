@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Tracker</title>
+    <!--
+      Google Fonts is loaded as a real external <link> so the type reads
+      correctly, but it's added back in after bundling (see the publish
+      step) — html-inline can't handle absolute-URL <link> tags, only the
+      build's own local CSS/JS.
+    -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

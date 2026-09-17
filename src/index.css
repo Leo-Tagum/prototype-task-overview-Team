@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------
+   Task Tracker — design tokens
+   Light palette lives on bare :root. Dark redefines the same tokens,
+   guarded so an explicit choice always wins over the OS setting.
+   Font <link> tags are intentionally not in index.html — see SETUP.md
+   for how they're spliced back in after bundling.
+   --------------------------------------------------------------------- */
+@layer base {
+  :root {
+    --background: 84 12% 94%;
+    --foreground: 165 24% 11%;
+    --card: 60 20% 98%;
+    --card-foreground: 165 24% 11%;
+    --popover: 60 20% 98%;
+    --popover-foreground: 165 24% 11%;
+    --primary: 178 46% 26%;
+    --primary-foreground: 60 20% 97%;
+    --secondary: 84 14% 88%;
+    --secondary-foreground: 165 24% 11%;
+    --muted: 84 12% 89%;
+    --muted-foreground: 165 10% 38%;
+    --accent: 84 20% 84%;
+    --accent-foreground: 165 24% 11%;
+    --destructive: 6 62% 45%;
+    --destructive-foreground: 60 20% 97%;
+    --border: 84 12% 82%;
+    --input: 84 12% 80%;
+    --ring: 178 46% 26%;
+    --radius: 0.3rem;
+
+    /* priority 1 (nice to have) -> 5 (urgent) */
+    --priority-1: 84 8% 45%;
+    --priority-1-fg: 84 8% 96%;
+    --priority-2: 200 18% 48%;
+    --priority-2-fg: 200 18% 96%;
+    --priority-3: 178 46% 28%;
+    --priority-3-fg: 178 46% 96%;
+    --priority-4: 22 70% 44%;
+    --priority-4-fg: 22 70% 96%;
+    --priority-5: 6 65% 46%;
+    --priority-5-fg: 6 65% 96%;
+
+    --status-not-started: 165 8% 45%;
+    --status-not-started-fg: 165 8% 96%;
+    --status-in-progress: 178 46% 30%;
+    --status-in-progress-fg: 178 46% 96%;
+    --status-blocked: 34 75% 42%;
+    --status-blocked-fg: 34 75% 96%;
+    --status-in-review: 210 55% 42%;
+    --status-in-review-fg: 210 55% 96%;
+    --status-done: 140 40% 30%;
+    --status-done-fg: 140 40% 96%;
+
+    --today-ring: 178 46% 26%;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --background: 170 20% 8%;
+      --foreground: 60 14% 92%;
+      --card: 170 17% 11%;
+      --card-foreground: 60 14% 92%;
+      --popover: 170 17% 11%;
+      --popover-foreground: 60 14% 92%;
+      --primary: 174 42% 58%;
+      --primary-foreground: 170 20% 8%;
+      --secondary: 170 14% 16%;
+      --secondary-foreground: 60 14% 92%;
+      --muted: 170 12% 15%;
+      --muted-foreground: 60 8% 64%;
+      --accent: 170 14% 18%;
+      --accent-foreground: 60 14% 92%;
+      --destructive: 6 58% 56%;
+      --destructive-foreground: 60 14% 96%;
+      --border: 170 12% 20%;
+      --input: 170 12% 22%;
+      --ring: 174 42% 58%;
+
+      --priority-1: 84 8% 62%;
+      --priority-1-fg: 84 8% 12%;
+      --priority-2: 200 26% 66%;
+      --priority-2-fg: 200 30% 12%;
+      --priority-3: 174 42% 58%;
+      --priority-3-fg: 174 40% 12%;
+      --priority-4: 26 72% 62%;
+      --priority-4-fg: 26 40% 12%;
+      --priority-5: 6 68% 62%;
+      --priority-5-fg: 6 40% 12%;
+
+      --status-not-started: 165 8% 62%;
+      --status-not-started-fg: 165 8% 12%;
+      --status-in-progress: 174 42% 58%;
+      --status-in-progress-fg: 174 40% 12%;
+      --status-blocked: 38 72% 60%;
+      --status-blocked-fg: 38 40% 12%;
+      --status-in-review: 210 55% 66%;
+      --status-in-review-fg: 210 40% 12%;
+      --status-done: 140 35% 56%;
+      --status-done-fg: 140 40% 10%;
+
+      --today-ring: 174 42% 58%;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --background: 170 20% 8%;
+    --foreground: 60 14% 92%;
+    --card: 170 17% 11%;
+    --card-foreground: 60 14% 92%;
+    --popover: 170 17% 11%;
+    --popover-foreground: 60 14% 92%;
+    --primary: 174 42% 58%;
+    --primary-foreground: 170 20% 8%;
+    --secondary: 170 14% 16%;
+    --secondary-foreground: 60 14% 92%;
+    --muted: 170 12% 15%;
+    --muted-foreground: 60 8% 64%;
+    --accent: 170 14% 18%;
+    --accent-foreground: 60 14% 92%;
+    --destructive: 6 58% 56%;
+    --destructive-foreground: 60 14% 96%;
+    --border: 170 12% 20%;
+    --input: 170 12% 22%;
+    --ring: 174 42% 58%;
+
+    --priority-1: 84 8% 62%;
+    --priority-1-fg: 84 8% 12%;
+    --priority-2: 200 26% 66%;
+    --priority-2-fg: 200 30% 12%;
+    --priority-3: 174 42% 58%;
+    --priority-3-fg: 174 40% 12%;
+    --priority-4: 26 72% 62%;
+    --priority-4-fg: 26 40% 12%;
+    --priority-5: 6 68% 62%;
+    --priority-5-fg: 6 40% 12%;
+
+    --status-not-started: 165 8% 62%;
+    --status-not-started-fg: 165 8% 12%;
+    --status-in-progress: 174 42% 58%;
+    --status-in-progress-fg: 174 40% 12%;
+    --status-blocked: 38 72% 60%;
+    --status-blocked-fg: 38 40% 12%;
+    --status-in-review: 210 55% 66%;
+    --status-in-review-fg: 210 40% 12%;
+    --status-done: 140 35% 56%;
+    --status-done-fg: 140 40% 10%;
+
+    --today-ring: 174 42% 58%;
+    color-scheme: dark;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+  }
+  .font-display {
+    font-family: "Fraunces", Georgia, "Times New Roman", serif;
+    font-optical-sizing: auto;
+  }
+  .font-mono-data {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+}

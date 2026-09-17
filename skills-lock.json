@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "artifacts-builder": {
+      "source": "davepoon/buildwithclaude",
+      "sourceType": "github",
+      "skillPath": "plugins/all-skills/skills/artifacts-builder/SKILL.md",
+      "computedHash": "0ed70c0e84a1dc405b5c90cd3024bfca14b9e95b3ecb0b8cb00a76f08756eb3d"
+    }
+  }
+}
