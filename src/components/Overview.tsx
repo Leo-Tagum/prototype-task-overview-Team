@@ -84,19 +84,50 @@ export function Overview({
   );
 
   const brief = useMemo(() => buildQuickBrief(tasks, projects, now), [tasks, projects, now]);
+  const teamBriefs = useMemo(
+    () => tasks.filter((t) => !t.archived && t.brief.trim() && t.status !== "done"),
+    [tasks],
+  );
 
   return (
     <div className="flex flex-col gap-4 p-3">
-      {brief && (
+      {(brief || teamBriefs.length > 0) && (
         <div className="rounded-md border border-border bg-card p-3">
-          <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
-            Quick brief
-          </div>
-          <div className="text-sm leading-relaxed text-muted-foreground">
-            {brief.lines.map((line, i) => (
-              <p key={i}>{line}</p>
-            ))}
-          </div>
+          {brief && (
+            <>
+              <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                Quick brief
+              </div>
+              <div className="text-sm leading-relaxed text-muted-foreground">
+                {brief.lines.map((line, i) => (
+                  <p key={i}>{line}</p>
+                ))}
+              </div>
+            </>
+          )}
+
+          {teamBriefs.length > 0 && (
+            <div className={brief ? "mt-2 border-t border-border pt-2" : undefined}>
+              <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                From the team
+              </div>
+              {/* Capped height, not item count — every brief stays reachable by
+                  scrolling, but the card never grows past a few lines. */}
+              <div className="flex max-h-24 flex-col gap-0.5 overflow-y-auto scrollbar-thin">
+                {teamBriefs.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => onOpenTask(t.id)}
+                    className="flex items-baseline gap-1.5 truncate text-left text-xs hover:underline"
+                  >
+                    <span className="shrink-0 font-medium">{t.title}</span>
+                    <span className="truncate text-muted-foreground">— {t.brief.trim()}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
